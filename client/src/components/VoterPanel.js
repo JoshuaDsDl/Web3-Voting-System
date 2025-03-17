@@ -1,49 +1,60 @@
 import React, { useState, useEffect } from 'react';
 
+/**
+ * Panneau pour les votants inscrits
+ * Permet de soumettre des propositions et de voter
+ */
 function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractData }) {
-  const [proposalDescription, setProposalDescription] = useState('');
-  const [proposals, setProposals] = useState([]);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [votedProposalId, setVotedProposalId] = useState(null);
-  const [winningProposal, setWinningProposal] = useState(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // États pour gérer les propositions et les votes
+  const [proposalDescription, setProposalDescription] = useState(''); // Nouvelle proposition à soumettre
+  const [proposals, setProposals] = useState([]);                      // Liste des propositions existantes
+  const [hasVoted, setHasVoted] = useState(false);                     // Est-ce que l'utilisateur a déjà voté
+  const [votedProposalId, setVotedProposalId] = useState(null);        // Pour quelle proposition a-t-il voté
+  const [winningProposal, setWinningProposal] = useState(null);        // La proposition gagnante
+  const [error, setError] = useState('');                             // Message d'erreur
+  const [success, setSuccess] = useState('');                          // Message de succès
+  const [isLoading, setIsLoading] = useState(false);                   // Pour suivre si une transaction est en cours
 
-  // Charger les données du votant et les propositions
+  /**
+   * Ce hook se lance au chargement du composant et quand certaines données changent
+   * Il récupère toutes les infos dont on a besoin: statut du votant, propositions, etc.
+   */
   useEffect(() => {
     const loadData = async () => {
       try {
         if (contract && accounts.length > 0) {
-          // Récupérer les informations du votant
+          // D'abord on check si l'utilisateur a déjà voté
           const voter = await contract.methods.voters(accounts[0]).call();
           setHasVoted(voter.hasVoted);
           setVotedProposalId(voter.hasVoted ? parseInt(voter.votedProposalId) : null);
           
-          // Récupérer les propositions
+          // Ensuite on récupère toutes les propositions soumises
           await loadProposals();
           
-          // Si les votes sont comptabilisés, récupérer la proposition gagnante
+          // Si on est à la dernière étape, on récupère le résultat du vote
           if (workflowStatus === 5) {
             await loadWinningProposal();
           }
         }
       } catch (error) {
         console.error("Erreur lors du chargement des données :", error);
-        setError("Une erreur est survenue lors du chargement des données");
+        setError("Oups! Impossible de charger tes données de vote");
       }
     };
     
     loadData();
-  }, [contract, accounts, workflowStatus]);
+  }, [contract, accounts, workflowStatus]); // Se relance quand ces valeurs changent
 
-  // Fonction pour charger les propositions
+  /**
+   * Fonction qui récupère toutes les propositions depuis le contrat
+   * et les stocke dans l'état local
+   */
   const loadProposals = async () => {
     try {
-      // Récupérer le nombre de propositions
+      // D'abord on demande combien de propositions existent
       const count = await contract.methods.getProposalsCount().call();
       
-      // Récupérer chaque proposition
+      // Puis on les récupère une par une
       const proposalsArray = [];
       for (let i = 1; i <= count; i++) {
         const proposal = await contract.methods.proposals(i).call();
@@ -58,29 +69,36 @@ function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractD
       setProposals(proposalsArray);
     } catch (error) {
       console.error("Erreur lors du chargement des propositions :", error);
-      setError("Une erreur est survenue lors du chargement des propositions");
+      setError("Impossible de récupérer les propositions. La blockchain fait sa difficile!");
     }
   };
 
-  // Fonction pour charger la proposition gagnante
+  /**
+   * Fonction qui récupère la proposition gagnante après comptage
+   * Ne fonctionne que si on est à l'étape 5 (votes comptabilisés)
+   */
   const loadWinningProposal = async () => {
     try {
-      const winningProposalData = await contract.methods.getWinningProposal().call();
-      setWinningProposal({
-        description: winningProposalData.description,
-        voteCount: parseInt(winningProposalData.voteCount),
-        proposer: winningProposalData.proposer
-      });
+      if (workflowStatus === 5) {
+        // On appelle la fonction qui nous donne le gagnant
+        const result = await contract.methods.getWinningProposal().call();
+        
+        setWinningProposal({
+          description: result.description,
+          voteCount: parseInt(result.voteCount),
+          proposer: result.proposer
+        });
+      }
     } catch (error) {
       console.error("Erreur lors du chargement de la proposition gagnante :", error);
-      // Ne pas afficher d'erreur si les votes ne sont pas encore comptabilisés
-      if (workflowStatus === 5) {
-        setError("Une erreur est survenue lors du chargement de la proposition gagnante");
-      }
+      setError("Impossible de récupérer le gagnant. Bizarre, bizarre...");
     }
   };
 
-  // Fonction pour soumettre une proposition
+  /**
+   * Fonction pour soumettre une nouvelle proposition
+   * Ne fonctionne que pendant la phase d'enregistrement des propositions (étape 1)
+   */
   const submitProposal = async (e) => {
     e.preventDefault();
     setError('');
@@ -88,49 +106,52 @@ function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     setIsLoading(true);
 
     try {
-      // Vérification de la description
+      // On vérifie que la description n'est pas vide
       if (!proposalDescription.trim()) {
-        throw new Error("La description de la proposition ne peut pas être vide");
+        throw new Error("Hé, il faut écrire quelque chose quand même!");
       }
 
-      // Appel de la fonction du contrat
+      // On envoie la proposition au contrat
       await contract.methods.registerProposal(proposalDescription).send({ from: accounts[0] });
       
-      setSuccess("Proposition soumise avec succès");
-      setProposalDescription('');
+      // Si tout va bien, on met à jour l'interface
+      setSuccess("Ta proposition a été soumise avec succès. Bien joué!");
+      setProposalDescription(''); // On vide le champ pour faciliter l'ajout d'une autre proposition
       
-      // Recharger les propositions
+      // On recharge les propositions pour voir la nouvelle
       await loadProposals();
     } catch (error) {
       console.error("Erreur lors de la soumission de la proposition :", error);
-      setError(error.message || "Une erreur est survenue lors de la soumission de la proposition");
+      setError(error.message || "Impossible de soumettre ta proposition. T'as peut-être déjà proposé?");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fonction pour voter pour une proposition
+  /**
+   * Fonction pour voter pour une proposition
+   * Ne fonctionne que pendant la phase de vote (étape 3)
+   */
   const voteForProposal = async (proposalId) => {
     setError('');
     setSuccess('');
     setIsLoading(true);
 
     try {
-      // Appel de la fonction du contrat
+      // On envoie le vote au contrat
       await contract.methods.vote(proposalId).send({ from: accounts[0] });
       
-      setSuccess(`Vote pour la proposition #${proposalId} enregistré avec succès`);
+      // Si tout va bien, on met à jour l'interface
+      setSuccess("Ton vote a été enregistré! Merci de participer!");
       setHasVoted(true);
       setVotedProposalId(proposalId);
       
-      // Recharger les propositions pour mettre à jour les compteurs de votes
+      // On recharge les propositions pour mettre à jour les compteurs
       await loadProposals();
-      
-      // Rafraîchir les données du contrat
       await refreshContractData();
     } catch (error) {
       console.error("Erreur lors du vote :", error);
-      setError(error.message || "Une erreur est survenue lors du vote");
+      setError(error.message || "Impossible de voter. T'as peut-être déjà voté?");
     } finally {
       setIsLoading(false);
     }
@@ -138,86 +159,75 @@ function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractD
 
   return (
     <div className="voter-panel card">
-      <h2>Panneau de votant</h2>
+      <h2>Espace Votant</h2>
       
+      {/* Affichage des messages d'erreur ou de succès */}
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
       
-      {/* Phase d'enregistrement des propositions */}
+      {/* Formulaire de soumission de proposition (étape 1) */}
       {workflowStatus === 1 && (
-        <div className="panel-section">
+        <div className="section">
           <h3>Soumettre une proposition</h3>
           <form onSubmit={submitProposal}>
             <div className="form-group">
-              <label htmlFor="proposalDescription">Description de la proposition</label>
+              <label htmlFor="proposalDescription">Description :</label>
               <textarea
                 id="proposalDescription"
-                className="input"
                 value={proposalDescription}
                 onChange={(e) => setProposalDescription(e.target.value)}
-                placeholder="Décrivez votre proposition..."
-                rows="4"
+                className="form-control"
+                placeholder="Décris ton idée ici..."
                 required
               />
             </div>
-            <button type="submit" className="btn" disabled={isLoading}>
-              {isLoading ? "Soumission..." : "Soumettre la proposition"}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? "Soumission en cours..." : "Soumettre la proposition"}
             </button>
           </form>
         </div>
       )}
       
-      {/* Phase de vote */}
-      {workflowStatus === 3 && !hasVoted && (
-        <div className="panel-section">
-          <h3>Voter pour une proposition</h3>
-          <p>Sélectionnez une proposition pour laquelle voter :</p>
-        </div>
-      )}
-      
-      {/* Affichage du vote de l'utilisateur */}
-      {hasVoted && votedProposalId && (
-        <div className="panel-section">
-          <h3>Votre vote</h3>
-          <div className="alert alert-info">
-            Vous avez voté pour la proposition #{votedProposalId} : 
-            {proposals.find(p => p.id === votedProposalId)?.description || "Chargement..."}
-          </div>
-        </div>
-      )}
-      
-      {/* Liste des propositions */}
+      {/* Liste des propositions (visible à toutes les étapes) */}
       {proposals.length > 0 && (
-        <div className="panel-section">
-          <h3>Liste des propositions</h3>
-          <div className="proposal-list">
+        <div className="section">
+          <h3>Propositions</h3>
+          <div className="proposals-list">
             {proposals.map((proposal) => (
-              <div key={proposal.id} className="proposal-item">
-                <div className="proposal-header">
-                  <h4>Proposition #{proposal.id}</h4>
-                  {workflowStatus >= 5 && (
-                    <span className="vote-count">
-                      {proposal.voteCount} vote{proposal.voteCount !== 1 ? 's' : ''}
-                    </span>
+              <div key={proposal.id} className={`proposal-card ${votedProposalId === proposal.id ? 'voted' : ''}`}>
+                <div className="proposal-content">
+                  <p className="proposal-description">{proposal.description}</p>
+                  <p className="proposal-info">
+                    Proposée par: {proposal.proposer === accounts[0] ? "Toi" : `${proposal.proposer.substring(0, 6)}...${proposal.proposer.substring(38)}`}
+                  </p>
+                  {(workflowStatus >= 5) && (
+                    <p className="vote-count">Votes reçus: {proposal.voteCount}</p>
                   )}
                 </div>
-                <div className="proposal-description">{proposal.description}</div>
-                <div className="proposal-meta">
-                  Proposé par : {proposal.proposer.substring(0, 6)}...{proposal.proposer.substring(proposal.proposer.length - 4)}
-                </div>
                 
+                {/* Bouton de vote (uniquement en phase de vote - étape 3) */}
                 {workflowStatus === 3 && !hasVoted && (
                   <button
-                    className="btn vote-button"
+                    className="btn btn-vote"
                     onClick={() => voteForProposal(proposal.id)}
                     disabled={isLoading}
                   >
-                    Voter pour cette proposition
+                    {isLoading ? "..." : "Voter"}
                   </button>
                 )}
                 
-                {workflowStatus >= 5 && winningProposal && proposal.description === winningProposal.description && (
-                  <div className="winning-badge">Proposition gagnante 🏆</div>
+                {/* Indication du vote de l'utilisateur */}
+                {hasVoted && votedProposalId === proposal.id && (
+                  <div className="voted-indicator">Tu as voté pour cette proposition</div>
+                )}
+                
+                {/* Indication de la proposition gagnante */}
+                {workflowStatus === 5 && winningProposal && winningProposal.description === proposal.description && (
+                  <div className="winning-indicator">🏆 Proposition gagnante!</div>
                 )}
               </div>
             ))}
@@ -225,14 +235,28 @@ function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractD
         </div>
       )}
       
-      {/* Résultats du vote */}
+      {/* Message si pas de propositions */}
+      {proposals.length === 0 && workflowStatus >= 1 && (
+        <div className="alert alert-info">
+          Aucune proposition n'a encore été soumise.
+          {workflowStatus === 1 && " Sois le premier à proposer quelque chose!"}
+        </div>
+      )}
+      
+      {/* Résultat du vote (étape 5) */}
       {workflowStatus === 5 && winningProposal && (
-        <div className="panel-section">
-          <h3>Résultat du vote</h3>
-          <div className="alert alert-success">
-            <h4>Proposition gagnante : {winningProposal.description}</h4>
-            <p>Nombre de votes : {winningProposal.voteCount}</p>
-            <p>Proposé par : {winningProposal.proposer.substring(0, 6)}...{winningProposal.proposer.substring(winningProposal.proposer.length - 4)}</p>
+        <div className="section result-section">
+          <h3>Résultat final du vote</h3>
+          <div className="winning-proposal">
+            <h4>🏆 Proposition gagnante</h4>
+            <p className="proposal-description">{winningProposal.description}</p>
+            <p className="vote-count">Nombre de votes: {winningProposal.voteCount}</p>
+            <p className="proposer">
+              Proposée par: {winningProposal.proposer === accounts[0] 
+                ? "Toi (bravo!)" 
+                : `${winningProposal.proposer.substring(0, 6)}...${winningProposal.proposer.substring(38)}`
+              }
+            </p>
           </div>
         </div>
       )}

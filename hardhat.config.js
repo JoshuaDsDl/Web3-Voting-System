@@ -8,7 +8,7 @@ module.exports = {
       chainId: 1337
     },
     localhost: {
-      url: "http://127.0.0.1:8545",
+      url: "http://172.20.10.5:8545",
       chainId: 1337
     }
   },

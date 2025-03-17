@@ -2,293 +2,289 @@
   "contractName": "Voting",
   "abi": [
     {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
+      "type": "constructor",
+      "stateMutability": "undefined",
+      "payable": false,
+      "inputs": []
     },
     {
+      "type": "event",
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
       "name": "ProposalRegistered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
+          "type": "uint256",
           "name": "proposalId",
-          "type": "uint256"
+          "indexed": false
         }
-      ],
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
       "name": "Voted",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "address",
-          "name": "voterAddress",
-          "type": "address"
+          "type": "address",
+          "name": "voter",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "proposalId",
+          "indexed": false
         }
-      ],
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
       "name": "VoterRegistered",
-      "type": "event"
+      "inputs": [
+        {
+          "type": "address",
+          "name": "voterAddress",
+          "indexed": false
+        }
+      ]
     },
     {
+      "type": "event",
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "enum Voting.WorkflowStatus",
-          "name": "previousStatus",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum Voting.WorkflowStatus",
-          "name": "newStatus",
-          "type": "uint8"
-        }
-      ],
       "name": "WorkflowStatusChange",
-      "type": "event"
+      "inputs": [
+        {
+          "type": "uint8",
+          "name": "previousStatus",
+          "indexed": false
+        },
+        {
+          "type": "uint8",
+          "name": "newStatus",
+          "indexed": false
+        }
+      ]
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "endProposalsRegistration",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "endVotingSession",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "getProposalsCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "type": "uint256",
+          "name": ""
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "getWinningProposal",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "string",
-          "name": "description",
-          "type": "string"
+          "type": "string",
+          "name": "description"
         },
         {
-          "internalType": "uint256",
-          "name": "voteCount",
-          "type": "uint256"
+          "type": "uint256",
+          "name": "voteCount"
         },
         {
-          "internalType": "address",
-          "name": "proposer",
-          "type": "address"
+          "type": "address",
+          "name": "proposer"
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "owner",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
+          "type": "address",
+          "name": ""
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
+      "type": "function",
       "name": "proposals",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "description",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "voteCount",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "proposer",
-          "type": "address"
-        }
-      ],
+      "constant": true,
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
+      "payable": false,
       "inputs": [
         {
-          "internalType": "string",
-          "name": "_description",
-          "type": "string"
+          "type": "uint256",
+          "name": ""
         }
       ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": "description"
+        },
+        {
+          "type": "uint256",
+          "name": "voteCount"
+        },
+        {
+          "type": "address",
+          "name": "proposer"
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "registerProposal",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
+      "constant": false,
+      "payable": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_voter",
-          "type": "address"
+          "type": "string",
+          "name": "_description"
         }
       ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "registerVoter",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_voter"
+        }
+      ],
+      "outputs": []
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "startProposalsRegistration",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "startVotingSession",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "tallyVotes",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_proposalId",
-          "type": "uint256"
-        }
-      ],
+      "type": "function",
       "name": "vote",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
+      "constant": false,
+      "payable": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
+          "type": "uint256",
+          "name": "_proposalId"
         }
       ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "voters",
-      "outputs": [
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
         {
-          "internalType": "bool",
-          "name": "isRegistered",
-          "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "hasVoted",
-          "type": "bool"
-        },
-        {
-          "internalType": "uint256",
-          "name": "votedProposalId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bool",
-          "name": "hasProposed",
-          "type": "bool"
+          "type": "address",
+          "name": ""
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "isRegistered"
+        },
+        {
+          "type": "bool",
+          "name": "hasVoted"
+        },
+        {
+          "type": "uint256",
+          "name": "votedProposalId"
+        },
+        {
+          "type": "bool",
+          "name": "hasProposed"
+        }
+      ]
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "winningProposalId",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "type": "uint256",
+          "name": ""
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "workflowStatus",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "enum Voting.WorkflowStatus",
-          "name": "",
-          "type": "uint8"
+          "type": "uint8",
+          "name": ""
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     }
   ],
   "networks": {
     "1337": {
-      "events": {},
-      "links": {},
       "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       "transactionHash": "0x0"
     }
   }
-} 
+}
