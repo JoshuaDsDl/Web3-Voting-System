@@ -1,0 +1,99 @@
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px 0;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+}
+
+.account-address {
+  margin-right: 15px;
+  font-size: 14px;
+  color: #ecf0f1;
+}
+
+.workflow-status {
+  text-align: center;
+}
+
+.status-indicator {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.admin-panel, .voter-panel {
+  margin-top: 20px;
+}
+
+.panel-section {
+  margin-bottom: 30px;
+}
+
+.proposal-list {
+  margin-top: 20px;
+}
+
+.proposal-item {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: white;
+}
+
+.proposal-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.proposal-description {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.proposal-meta {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.vote-button {
+  margin-top: 10px;
+}
+
+.footer {
+  margin-top: auto;
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px 0;
+  text-align: center;
+}
+
+.footer-content {
+  font-size: 14px;
+} 
