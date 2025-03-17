@@ -55,7 +55,7 @@ contract Voting {
 
     // Vérifie que c'est bien le boss qui appelle la fonction
     modifier onlyOwner() {
-        require(msg.sender == owner, "Hé, t'es pas le boss! Seul l'admin peut faire ça");
+        require(msg.sender == owner, "T'es pas le boss, il faut que tu sois admin!");
         _;
     }
 
@@ -84,7 +84,7 @@ contract Voting {
      */
     function registerVoter(address _voter) external onlyOwner {
         require(workflowStatus == WorkflowStatus.RegisteringVoters, "Trop tard pour ajouter des votants!");
-        require(!voters[_voter].isRegistered, "Ce gars est déjà inscrit, t'es distrait?");
+        require(!voters[_voter].isRegistered, "Ce gars est deja inscrit, t'es distrait?");
         
         voters[_voter].isRegistered = true;
         
@@ -96,7 +96,7 @@ contract Voting {
      * Seul le boss peut déclencher ce changement
      */
     function startProposalsRegistration() external onlyOwner {
-        require(workflowStatus == WorkflowStatus.RegisteringVoters, "On n'est pas à la bonne étape, faut suivre!");
+        require(workflowStatus == WorkflowStatus.RegisteringVoters, "On n'est pas a la bonne etape, faut suivre!");
         
         workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
         
@@ -109,7 +109,7 @@ contract Voting {
      */
     function registerProposal(string calldata _description) external onlyVoters {
         require(workflowStatus == WorkflowStatus.ProposalsRegistrationStarted, "C'est pas le moment de proposer des trucs!");
-        require(bytes(_description).length > 0, "Faut au moins écrire quelque chose, non?");
+        require(bytes(_description).length > 0, "Faut au moins ecrire quelque chose, non?");
         
         // On ajoute la nouvelle proposition à la liste
         proposals.push(Proposal({
@@ -126,7 +126,7 @@ contract Voting {
      * Seul le boss peut fermer cette étape
      */
     function endProposalsRegistration() external onlyOwner {
-        require(workflowStatus == WorkflowStatus.ProposalsRegistrationStarted, "Faut d'abord démarrer la phase de propositions!");
+        require(workflowStatus == WorkflowStatus.ProposalsRegistrationStarted, "Faut d'abord demarrer la phase de propositions!");
         
         workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
         
@@ -138,7 +138,7 @@ contract Voting {
      * Maintenant les votants peuvent voter pour leurs propositions préférées
      */
     function startVotingSession() external onlyOwner {
-        require(workflowStatus == WorkflowStatus.ProposalsRegistrationEnded, "On n'est pas prêts pour voter!");
+        require(workflowStatus == WorkflowStatus.ProposalsRegistrationEnded, "On n'est pas prets pour voter!");
         
         workflowStatus = WorkflowStatus.VotingSessionStarted;
         
@@ -151,7 +151,7 @@ contract Voting {
      */
     function vote(uint _proposalId) external onlyVoters {
         require(workflowStatus == WorkflowStatus.VotingSessionStarted, "C'est pas le moment de voter!");
-        require(!voters[msg.sender].hasVoted, "T'as déjà voté, pas de triche!");
+        require(!voters[msg.sender].hasVoted, "T'as deja vote, pas de triche!");
         require(_proposalId > 0 && _proposalId < proposals.length, "Cette proposition n'existe pas!");
         
         // On enregistre le vote
@@ -216,7 +216,7 @@ contract Voting {
      * @return proposer L'adresse de celui qui a proposé
      */
     function getWinningProposal() external view returns (string memory description, uint voteCount, address proposer) {
-        require(workflowStatus == WorkflowStatus.VotesTallied, "Patience, on n'a pas encore compté!");
+        require(workflowStatus == WorkflowStatus.VotesTallied, "Patience, on n'a pas encore compte!");
         
         return (
             proposals[winningProposalId].description,
