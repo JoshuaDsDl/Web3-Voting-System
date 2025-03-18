@@ -1,9 +1,0 @@
-[33mcommit f253c6fa8ee43dfcb07bf1f9b4d5426808ba6655[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
-Author: Joshua Deschietere <joshua.deschietere@etu.imt-nord-europe.fr>
-Date:   Tue Mar 18 16:08:31 2025 +0100
-
-    Nettoyage des fichiers temporaires
-
- et --hard 945b060 | 4 [31m----[m
- et --hard b6d2e81 | 5 [31m-----[m
- 2 files changed, 9 deletions(-)

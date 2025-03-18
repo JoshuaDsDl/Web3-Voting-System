@@ -1,266 +1,271 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  Paper, 
+  Grid, 
+  Chip,
+  Card,
+  CardContent,
+  CardActions,
+  CircularProgress
+} from '@mui/material';
+import HowToVoteIcon from '@mui/icons-material/HowToVote';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import useWeb3Store from '../store/web3Store';
+import useVotingStore from '../store/votingStore';
+import AlertMessage from './AlertMessage';
+import ProposalSubmission from './ProposalSubmission';
 
 /**
  * Panneau pour les votants inscrits
- * Permet de soumettre des propositions et de voter
  */
-function VoterPanel({ web3, accounts, contract, workflowStatus, refreshContractData }) {
-  // États pour gérer les propositions et les votes
-  const [proposalDescription, setProposalDescription] = useState(''); // Nouvelle proposition à soumettre
-  const [proposals, setProposals] = useState([]);                      // Liste des propositions existantes
-  const [hasVoted, setHasVoted] = useState(false);                     // Est-ce que l'utilisateur a déjà voté
-  const [votedProposalId, setVotedProposalId] = useState(null);        // Pour quelle proposition a-t-il voté
-  const [winningProposal, setWinningProposal] = useState(null);        // La proposition gagnante
-  const [error, setError] = useState('');                             // Message d'erreur
-  const [success, setSuccess] = useState('');                          // Message de succès
-  const [isLoading, setIsLoading] = useState(false);                   // Pour suivre si une transaction est en cours
+function VoterPanel() {
+  // États du store
+  const workflowStatus = useWeb3Store(state => state.workflowStatus);
+  const { 
+    proposals, 
+    hasVoted, 
+    votedProposalId, 
+    winningProposal,
+    isLoading,
+    error,
+    success,
+    loadProposals,
+    loadVoterState,
+    loadWinningProposal,
+    voteForProposal,
+    clearMessages
+  } = useVotingStore();
 
-  /**
-   * Ce hook se lance au chargement du composant et quand certaines données changent
-   * Il récupère toutes les infos dont on a besoin: statut du votant, propositions, etc.
-   */
+  // Chargement initial des données
   useEffect(() => {
     const loadData = async () => {
-      try {
-        if (contract && accounts.length > 0) {
-          // D'abord on check si l'utilisateur a déjà voté
-          const voter = await contract.methods.voters(accounts[0]).call();
-          setHasVoted(voter.hasVoted);
-          setVotedProposalId(voter.hasVoted ? parseInt(voter.votedProposalId) : null);
-          
-          // Ensuite on récupère toutes les propositions soumises
-          await loadProposals();
-          
-          // Si on est à la dernière étape, on récupère le résultat du vote
-          if (workflowStatus === 5) {
-            await loadWinningProposal();
-          }
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des données :", error);
-        setError("Oups! Impossible de charger tes données de vote");
+      await loadVoterState();
+      await loadProposals();
+      
+      if (workflowStatus === 5) {
+        await loadWinningProposal();
       }
     };
     
     loadData();
-  }, [contract, accounts, workflowStatus]); // Se relance quand ces valeurs changent
+  }, [workflowStatus, loadVoterState, loadProposals, loadWinningProposal]);
 
-  /**
-   * Fonction qui récupère toutes les propositions depuis le contrat
-   * et les stocke dans l'état local
-   */
-  const loadProposals = async () => {
-    try {
-      // D'abord on demande combien de propositions existent
-      const count = await contract.methods.getProposalsCount().call();
-      
-      // Puis on les récupère une par une
-      const proposalsArray = [];
-      for (let i = 1; i <= count; i++) {
-        const proposal = await contract.methods.proposals(i).call();
-        proposalsArray.push({
-          id: i,
-          description: proposal.description,
-          voteCount: parseInt(proposal.voteCount),
-          proposer: proposal.proposer
-        });
-      }
-      
-      setProposals(proposalsArray);
-    } catch (error) {
-      console.error("Erreur lors du chargement des propositions :", error);
-      setError("Impossible de récupérer les propositions. La blockchain fait sa difficile!");
+  // Vote pour une proposition
+  const handleVote = async (proposalId) => {
+    await voteForProposal(proposalId);
+  };
+
+  // Informations spécifiques à chaque étape du workflow
+  const phases = {
+    1: {
+      title: "Propositions ouvertes",
+      description: "Vous pouvez soumettre vos idées pour le vote"
+    },
+    3: {
+      title: "Vote en cours",
+      description: "Sélectionnez une proposition et votez"
+    },
+    5: {
+      title: "Résultats",
+      description: "Découvrez la proposition gagnante"
     }
   };
 
-  /**
-   * Fonction qui récupère la proposition gagnante après comptage
-   * Ne fonctionne que si on est à l'étape 5 (votes comptabilisés)
-   */
-  const loadWinningProposal = async () => {
-    try {
-      if (workflowStatus === 5) {
-        // On appelle la fonction qui nous donne le gagnant
-        const result = await contract.methods.getWinningProposal().call();
-        
-        setWinningProposal({
-          description: result.description,
-          voteCount: parseInt(result.voteCount),
-          proposer: result.proposer
-        });
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement de la proposition gagnante :", error);
-      setError("Impossible de récupérer le gagnant. Bizarre, bizarre...");
+  // Message personnalisé en fonction de l'étape
+  const getPhaseInfo = () => {
+    if (phases[workflowStatus]) {
+      return phases[workflowStatus];
+    } else if (workflowStatus === 0) {
+      return {
+        title: "Enregistrement des votants",
+        description: "L'administrateur doit valider votre inscription"
+      };
+    } else if (workflowStatus === 2) {
+      return {
+        title: "Propositions fermées",
+        description: "En attente du début de la phase de vote"
+      };
+    } else if (workflowStatus === 4) {
+      return {
+        title: "Vote terminé",
+        description: "En attente du décompte des votes"
+      };
     }
   };
 
-  /**
-   * Fonction pour soumettre une nouvelle proposition
-   * Ne fonctionne que pendant la phase d'enregistrement des propositions (étape 1)
-   */
-  const submitProposal = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
-
-    try {
-      // On vérifie que la description n'est pas vide
-      if (!proposalDescription.trim()) {
-        throw new Error("Hé, il faut écrire quelque chose quand même!");
-      }
-
-      // On envoie la proposition au contrat
-      await contract.methods.registerProposal(proposalDescription).send({ from: accounts[0] });
-      
-      // Si tout va bien, on met à jour l'interface
-      setSuccess("Ta proposition a été soumise avec succès. Bien joué!");
-      setProposalDescription(''); // On vide le champ pour faciliter l'ajout d'une autre proposition
-      
-      // On recharge les propositions pour voir la nouvelle
-      await loadProposals();
-    } catch (error) {
-      console.error("Erreur lors de la soumission de la proposition :", error);
-      setError(error.message || "Impossible de soumettre ta proposition. T'as peut-être déjà proposé?");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Fonction pour voter pour une proposition
-   * Ne fonctionne que pendant la phase de vote (étape 3)
-   */
-  const voteForProposal = async (proposalId) => {
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
-
-    try {
-      // On envoie le vote au contrat
-      await contract.methods.vote(proposalId).send({ from: accounts[0] });
-      
-      // Si tout va bien, on met à jour l'interface
-      setSuccess("Ton vote a été enregistré! Merci de participer!");
-      setHasVoted(true);
-      setVotedProposalId(proposalId);
-      
-      // On recharge les propositions pour mettre à jour les compteurs
-      await loadProposals();
-      await refreshContractData();
-    } catch (error) {
-      console.error("Erreur lors du vote :", error);
-      setError(error.message || "Impossible de voter. T'as peut-être déjà voté?");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const phaseInfo = getPhaseInfo();
 
   return (
-    <div className="voter-panel card">
-      <h2>Espace Votant</h2>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+      {/* Titre du panneau avec information de phase */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center', 
+        mb: 3,
+        pb: 2,
+        borderBottom: '1px solid rgba(0,0,0,0.1)',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1,
+          width: { xs: '100%', sm: 'auto' } 
+        }}>
+          <HowToVoteIcon sx={{ color: '#3f51b5', fontSize: 28 }} />
+          <Typography variant="h5" color="primary" fontWeight="bold">
+            Espace Votant
+          </Typography>
+        </Box>
+        
+        <Chip 
+          label={phaseInfo?.title} 
+          color="primary" 
+          sx={{ 
+            fontSize: '0.85rem', 
+            fontWeight: 'medium',
+            width: { xs: '100%', sm: 'auto' }
+          }}
+        />
+      </Box>
       
-      {/* Affichage des messages d'erreur ou de succès */}
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-      
-      {/* Formulaire de soumission de proposition (étape 1) */}
+      {/* Messages d'alerte */}
+      <AlertMessage 
+        message={error} 
+        severity="error" 
+        onClose={clearMessages} 
+      />
+      <AlertMessage 
+        message={success} 
+        severity="success" 
+        onClose={clearMessages} 
+      />
+
+      {/* Description de la phase actuelle */}
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+        {phaseInfo?.description}
+      </Typography>
+
+      {/* Phase 1: Propositions ouvertes */}
       {workflowStatus === 1 && (
-        <div className="section">
-          <h3>Soumettre une proposition</h3>
-          <form onSubmit={submitProposal}>
-            <div className="form-group">
-              <label htmlFor="proposalDescription">Description :</label>
-              <textarea
-                id="proposalDescription"
-                value={proposalDescription}
-                onChange={(e) => setProposalDescription(e.target.value)}
-                className="form-control"
-                placeholder="Décris ton idée ici..."
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isLoading}
-            >
-              {isLoading ? "Soumission en cours..." : "Soumettre la proposition"}
-            </button>
-          </form>
-        </div>
+        <ProposalSubmission />
       )}
-      
-      {/* Liste des propositions (visible à toutes les étapes) */}
-      {proposals.length > 0 && (
-        <div className="section">
-          <h3>Propositions</h3>
-          <div className="proposals-list">
-            {proposals.map((proposal) => (
-              <div key={proposal.id} className={`proposal-card ${votedProposalId === proposal.id ? 'voted' : ''}`}>
-                <div className="proposal-content">
-                  <p className="proposal-description">{proposal.description}</p>
-                  <p className="proposal-info">
-                    Proposée par: {proposal.proposer === accounts[0] ? "Toi" : `${proposal.proposer.substring(0, 6)}...${proposal.proposer.substring(38)}`}
-                  </p>
-                  {(workflowStatus >= 5) && (
-                    <p className="vote-count">Votes reçus: {proposal.voteCount}</p>
+
+      {/* Liste des propositions */}
+      {workflowStatus >= 1 && proposals.length > 0 && (
+        <Grid container spacing={2}>
+          {proposals.map((proposal) => (
+            <Grid item key={proposal.id} xs={12} sm={6} lg={4}>
+              <Card 
+                elevation={2}
+                sx={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  borderRadius: 2,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: { xs: 'none', sm: 'translateY(-3px)' },
+                    boxShadow: { xs: '0 2px 4px rgba(0,0,0,0.05)', sm: '0 4px 8px rgba(0,0,0,0.1)' }
+                  },
+                  ...(proposal.id === votedProposalId && {
+                    border: '2px solid #4caf50',
+                    boxShadow: '0 0 8px rgba(76,175,80,0.2)'
+                  }),
+                  ...(workflowStatus === 5 && winningProposal && proposal.id === winningProposal.id && {
+                    border: '2px solid #f50057',
+                    boxShadow: '0 0 8px rgba(245,0,87,0.2)'
+                  })
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1, pb: workflowStatus === 3 && !hasVoted ? 0 : undefined }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Chip 
+                      label={`#${proposal.id}`} 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: 'rgba(63,81,181,0.1)', 
+                        color: '#3f51b5',
+                        fontSize: '0.7rem',
+                        height: 20
+                      }} 
+                    />
+                    
+                    {workflowStatus >= 3 && (
+                      <Chip 
+                        label={`${proposal.voteCount} vote${proposal.voteCount !== 1 ? 's' : ''}`}
+                        size="small"
+                        color={workflowStatus === 5 && winningProposal && proposal.id === winningProposal.id ? 'secondary' : 'default'}
+                        sx={{ 
+                          fontSize: '0.7rem', 
+                          height: 20,
+                          ...(workflowStatus === 5 && winningProposal && proposal.id === winningProposal.id && {
+                            fontWeight: 'medium'
+                          })
+                        }}
+                      />
+                    )}
+                  </Box>
+                  
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    {proposal.description}
+                  </Typography>
+                  
+                  {proposal.id === votedProposalId && workflowStatus >= 3 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                      <HowToVoteIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
+                      <Typography variant="caption">Votre vote</Typography>
+                    </Box>
                   )}
-                </div>
+                  
+                  {workflowStatus === 5 && winningProposal && proposal.id === winningProposal.id && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'secondary.main' }}>
+                      <EmojiEventsIcon fontSize="small" sx={{ fontSize: '0.9rem' }} />
+                      <Typography variant="caption" fontWeight="bold">Gagnant</Typography>
+                    </Box>
+                  )}
+                </CardContent>
                 
-                {/* Bouton de vote (uniquement en phase de vote - étape 3) */}
                 {workflowStatus === 3 && !hasVoted && (
-                  <button
-                    className="btn btn-vote"
-                    onClick={() => voteForProposal(proposal.id)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "..." : "Voter"}
-                  </button>
+                  <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => handleVote(proposal.id)}
+                      disabled={isLoading}
+                      sx={{ 
+                        textTransform: 'none', 
+                        borderRadius: 4,
+                        py: 0,
+                        fontSize: '0.75rem',
+                        minWidth: 'auto'
+                      }}
+                    >
+                      {isLoading ? <CircularProgress size={16} color="inherit" /> : 'Voter'}
+                    </Button>
+                  </CardActions>
                 )}
-                
-                {/* Indication du vote de l'utilisateur */}
-                {hasVoted && votedProposalId === proposal.id && (
-                  <div className="voted-indicator">Tu as voté pour cette proposition</div>
-                )}
-                
-                {/* Indication de la proposition gagnante */}
-                {workflowStatus === 5 && winningProposal && winningProposal.description === proposal.description && (
-                  <div className="winning-indicator">🏆 Proposition gagnante!</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
-      
-      {/* Message si pas de propositions */}
-      {proposals.length === 0 && workflowStatus >= 1 && (
-        <div className="alert alert-info">
-          Aucune proposition n'a encore été soumise.
-          {workflowStatus === 1 && " Sois le premier à proposer quelque chose!"}
-        </div>
+
+      {/* Message si aucune proposition */}
+      {workflowStatus >= 1 && proposals.length === 0 && (
+        <Box sx={{ textAlign: 'center', p: 3, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Aucune proposition n'a encore été soumise.
+          </Typography>
+        </Box>
       )}
-      
-      {/* Résultat du vote (étape 5) */}
-      {workflowStatus === 5 && winningProposal && (
-        <div className="section result-section">
-          <h3>Résultat final du vote</h3>
-          <div className="winning-proposal">
-            <h4>🏆 Proposition gagnante</h4>
-            <p className="proposal-description">{winningProposal.description}</p>
-            <p className="vote-count">Nombre de votes: {winningProposal.voteCount}</p>
-            <p className="proposer">
-              Proposée par: {winningProposal.proposer === accounts[0] 
-                ? "Toi (bravo!)" 
-                : `${winningProposal.proposer.substring(0, 6)}...${winningProposal.proposer.substring(38)}`
-              }
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+    </Paper>
   );
 }
 
