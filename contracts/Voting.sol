@@ -47,6 +47,9 @@ contract Voting {
     // ID de la proposition qui a gagné (après comptage)
     uint public winningProposalId;
 
+    // Nombre total de votants enregistrés
+    uint public voterCount;
+
     // Tous les événements qu'on émet pour tracker ce qui se passe
     event VoterRegistered(address voterAddress); // Quelqu'un est inscrit comme votant
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus); // On change d'étape
@@ -87,8 +90,9 @@ contract Voting {
         require(!voters[_voter].isRegistered, "Ce gars est deja inscrit, t'es distrait?");
         
         voters[_voter].isRegistered = true;
+        voterCount++;
         
-        emit VoterRegistered(_voter); // On annonce que quelqu'un a été ajouté
+        emit VoterRegistered(_voter);
     }
 
     /**
@@ -97,6 +101,7 @@ contract Voting {
      */
     function startProposalsRegistration() external onlyOwner {
         require(workflowStatus == WorkflowStatus.RegisteringVoters, "On n'est pas a la bonne etape, faut suivre!");
+        require(voterCount >= 2, "Il faut au moins 2 votants pour commencer les propositions!");
         
         workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
         
@@ -139,6 +144,8 @@ contract Voting {
      */
     function startVotingSession() external onlyOwner {
         require(workflowStatus == WorkflowStatus.ProposalsRegistrationEnded, "On n'est pas prets pour voter!");
+        require(proposals.length > 2, "Il faut au moins 2 propositions pour commencer le vote!");
+        require(voterCount >= 2, "Il faut au moins 2 votants pour commencer le vote!");
         
         workflowStatus = WorkflowStatus.VotingSessionStarted;
         
@@ -193,12 +200,29 @@ contract Voting {
             }
         }
         
-        // Si deux propositions ont le même nombre de votes, c'est la première qui gagne
-        // (c'est un peu arbitraire mais c'est simple)
-        
         workflowStatus = WorkflowStatus.VotesTallied;
         
         emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
+    }
+
+    /**
+     * @dev Réinitialise le processus de vote
+     * Seul le propriétaire peut réinitialiser le vote
+     */
+    function resetVoting() external onlyOwner {
+        require(workflowStatus == WorkflowStatus.VotesTallied, "Le vote n'est pas encore termine!");
+        
+        // Réinitialiser le statut
+        workflowStatus = WorkflowStatus.RegisteringVoters;
+        
+        // Réinitialiser les propositions
+        delete proposals;
+        proposals.push(Proposal("", 0, address(0))); // Recréer la proposition factice à l'index 0
+        
+        // Réinitialiser le gagnant
+        winningProposalId = 0;
+        
+        emit WorkflowStatusChange(WorkflowStatus.VotesTallied, WorkflowStatus.RegisteringVoters);
     }
 
     /**

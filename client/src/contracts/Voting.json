@@ -186,6 +186,14 @@
     },
     {
       "type": "function",
+      "name": "resetVoting",
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "startProposalsRegistration",
       "constant": false,
       "payable": false,
@@ -220,6 +228,20 @@
         }
       ],
       "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "voterCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
     },
     {
       "type": "function",

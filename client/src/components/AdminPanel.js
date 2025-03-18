@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Paper, Alert, Divider } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, TextField, Button, Paper, Alert, Divider, Collapse } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
@@ -13,39 +13,68 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
   const [error, setError] = useState('');               // Message d'erreur à afficher
   const [success, setSuccess] = useState('');           // Message de succès à afficher
   const [isLoading, setIsLoading] = useState(false);    // Pour savoir si une transaction est en cours
+  const [registeredVoters, setRegisteredVoters] = useState([]);
+
+  // Timer pour effacer les messages après 5 secondes
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
+  // Charger les votants enregistrés
+  useEffect(() => {
+    const loadRegisteredVoters = async () => {
+      try {
+        const events = await contract.getPastEvents('VoterRegistered', {
+          fromBlock: 0,
+          toBlock: 'latest'
+        });
+        const voters = events.map(event => event.returnValues.voterAddress);
+        setRegisteredVoters(voters);
+      } catch (error) {
+        console.error("Erreur lors du chargement des votants:", error);
+      }
+    };
+
+    if (contract) {
+      loadRegisteredVoters();
+    }
+  }, [contract]);
 
   /**
    * Ajoute une adresse à la whitelist des votants autorisés
    * Seul l'admin peut faire ça pendant la phase d'enregistrement
    */
   const registerVoter = async (e) => {
-    e.preventDefault();  // Empêche le rechargement de la page quand on soumet le formulaire
-    // On réinitialise les messages précédents
+    e.preventDefault();
     setError('');
     setSuccess('');
-    setIsLoading(true);  // On indique qu'une opération est en cours
+    setIsLoading(true);
 
     try {
-      // On vérifie que l'adresse a bien le bon format
-      if (!web3.utils.isAddress(voterAddress)) {
-        throw new Error("L'adresse Ethereum n'est pas valide");
-      }
-
-      // On appelle la fonction registerVoter du contrat intelligent
-      // C'est ici que la transaction est envoyée à la blockchain
       await contract.methods.registerVoter(voterAddress).send({ from: accounts[0] });
+      setSuccess("Le votant a été enregistré avec succès");
+      setVoterAddress('');
       
-      // Si on arrive ici, c'est que ça a marché!
-      setSuccess(`Votant ${voterAddress} ajouté avec succès`);
-      setVoterAddress(''); // On vide le champ pour faciliter l'ajout d'une nouvelle adresse
+      // Mettre à jour la liste des votants
+      const events = await contract.getPastEvents('VoterRegistered', {
+        fromBlock: 0,
+        toBlock: 'latest'
+      });
+      const voters = events.map(event => event.returnValues.voterAddress);
+      setRegisteredVoters(voters);
       
-      // On rafraîchit les données pour voir les changements
       await refreshContractData();
     } catch (error) {
       console.error("Erreur lors de l'enregistrement du votant :", error);
-      setError(error.message || "Erreur lors de l'enregistrement du votant");
+      setError(error.message || "Impossible d'enregistrer le votant");
     } finally {
-      setIsLoading(false); // Dans tous les cas, on indique que l'opération est terminée
+      setIsLoading(false);
     }
   };
 
@@ -59,6 +88,9 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     setIsLoading(true);
 
     try {
+      if (registeredVoters.length < 2) {
+        throw new Error("Il faut au moins 2 votants pour démarrer les propositions!");
+      }
       // On appelle la fonction du contrat pour passer à l'étape suivante
       await contract.methods.startProposalsRegistration().send({ from: accounts[0] });
       setSuccess("La phase d'enregistrement des propositions a débuté");
@@ -165,21 +197,122 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     }
   };
 
+  const resetVotingProcess = async () => {
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+
+    try {
+      await contract.methods.resetVoting().send({ from: accounts[0] });
+      setSuccess("Le processus de vote a été réinitialisé");
+      await refreshContractData();
+    } catch (error) {
+      console.error("Erreur lors de la réinitialisation :", error);
+      setError(error.message || "Impossible de réinitialiser le vote");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <Paper elevation={3} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <AdminPanelSettingsIcon sx={{ fontSize: 24, mr: 1, color: '#3f51b5' }} />
-        <Typography variant="h6" component="h2" sx={{ color: '#3f51b5', fontWeight: 600 }}>
+    <Paper elevation={3} sx={{ p: 3, mb: 2, borderRadius: 2, bgcolor: '#ffffff' }}>
+      {/* En-tête du panneau */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 3,
+        pb: 2,
+        borderBottom: '2px solid #e0e0e0'
+      }}>
+        <AdminPanelSettingsIcon sx={{ fontSize: 28, mr: 1.5, color: '#3f51b5' }} />
+        <Typography variant="h5" component="h2" sx={{ 
+          color: '#3f51b5', 
+          fontWeight: 600,
+          letterSpacing: '-0.5px'
+        }}>
           Panneau d'administration
         </Typography>
       </Box>
       
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+      {/* Messages d'alerte */}
+      <Box sx={{ mb: 3 }}>
+        <Collapse in={!!error} timeout={500}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: error && success ? 1 : 0,
+              '& .MuiAlert-message': { fontSize: '0.95rem' }
+            }}
+          >
+            {error}
+          </Alert>
+        </Collapse>
+        <Collapse in={!!success} timeout={500}>
+          <Alert 
+            severity="success" 
+            sx={{ 
+              '& .MuiAlert-message': { fontSize: '0.95rem' }
+            }}
+          >
+            {success}
+          </Alert>
+        </Collapse>
+      </Box>
       
+      {/* Liste des votants */}
       {workflowStatus === 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ 
+            mb: 2,
+            color: '#2c3e50',
+            fontSize: '1.1rem',
+            fontWeight: 600
+          }}>
+            Votants enregistrés ({registeredVoters.length})
+          </Typography>
+          <Box sx={{ 
+            maxHeight: '200px', 
+            overflowY: 'auto', 
+            bgcolor: '#f8f9fa',
+            p: 2.5, 
+            borderRadius: 2,
+            border: '1px solid #e0e0e0'
+          }}>
+            {registeredVoters.map((voter, index) => (
+              <Typography key={index} sx={{ 
+                mb: 1.5,
+                fontFamily: 'monospace',
+                fontSize: '0.9rem',
+                color: '#2c3e50',
+                p: 1,
+                bgcolor: '#ffffff',
+                borderRadius: 1,
+                border: '1px solid #e8e8e8'
+              }}>
+                {voter}
+              </Typography>
+            ))}
+            {registeredVoters.length === 0 && (
+              <Typography sx={{ 
+                color: '#666',
+                fontStyle: 'italic'
+              }}>
+                Aucun votant enregistré
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
+      
+      {/* Formulaire d'ajout de votant */}
+      {workflowStatus === 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ 
+            mb: 2,
+            color: '#2c3e50',
+            fontSize: '1.1rem',
+            fontWeight: 600
+          }}>
             Enregistrer un votant
           </Typography>
           <form onSubmit={registerVoter}>
@@ -191,17 +324,24 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onChange={(e) => setVoterAddress(e.target.value)}
               placeholder="0x..."
               required
-              sx={{ mb: 1 }}
+              sx={{ 
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5
+                }
+              }}
             />
             <Button
               type="submit"
               variant="contained"
               disabled={isLoading}
               startIcon={<HowToVoteIcon />}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                textTransform: 'none',
+                px: 3
               }}
             >
               {isLoading ? "Traitement en cours..." : "Enregistrer le votant"}
@@ -210,23 +350,37 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
         </Box>
       )}
       
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 3 }} />
       
+      {/* Section workflow */}
       <Box>
-        <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>
+        <Typography variant="h6" sx={{ 
+          mb: 3,
+          color: '#2c3e50',
+          fontSize: '1.1rem',
+          fontWeight: 600
+        }}>
           Gestion du workflow
         </Typography>
         
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 2
+        }}>
           {workflowStatus === 0 && (
             <Button
               onClick={startProposalsRegistration}
               variant="contained"
               disabled={isLoading}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
               {isLoading ? "Traitement en cours..." : "Démarrer l'enregistrement des propositions"}
@@ -238,10 +392,14 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={endProposalsRegistration}
               variant="contained"
               disabled={isLoading}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
               {isLoading ? "Traitement en cours..." : "Terminer l'enregistrement des propositions"}
@@ -253,10 +411,14 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={startVotingSession}
               variant="contained"
               disabled={isLoading}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
               {isLoading ? "Traitement en cours..." : "Démarrer la session de vote"}
@@ -268,10 +430,14 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={endVotingSession}
               variant="contained"
               disabled={isLoading}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
               {isLoading ? "Traitement en cours..." : "Terminer la session de vote"}
@@ -283,13 +449,38 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={tallyVotes}
               variant="contained"
               disabled={isLoading}
-              size="small"
               sx={{
                 bgcolor: '#3f51b5',
-                '&:hover': { bgcolor: '#303f9f' }
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
               {isLoading ? "Traitement en cours..." : "Comptabiliser les votes"}
+            </Button>
+          )}
+
+          {workflowStatus === 5 && (
+            <Button
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/';
+              }}
+              variant="contained"
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' },
+                borderRadius: 1.5,
+                py: 1.2,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              Retour à l'accueil
             </Button>
           )}
         </Box>
