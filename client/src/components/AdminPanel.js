@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Box, Typography, TextField, Button, Paper, Alert, Divider } from '@mui/material';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
 /**
  * Panneau d'administration réservé au boss 
@@ -25,7 +28,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On vérifie que l'adresse a bien le bon format
       if (!web3.utils.isAddress(voterAddress)) {
-        throw new Error("Hé, ça c'est pas une adresse Ethereum valide!");
+        throw new Error("L'adresse Ethereum n'est pas valide");
       }
 
       // On appelle la fonction registerVoter du contrat intelligent
@@ -33,14 +36,14 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
       await contract.methods.registerVoter(voterAddress).send({ from: accounts[0] });
       
       // Si on arrive ici, c'est que ça a marché!
-      setSuccess(`Super! Votant ${voterAddress} ajouté à la whitelist`);
+      setSuccess(`Votant ${voterAddress} ajouté avec succès`);
       setVoterAddress(''); // On vide le champ pour faciliter l'ajout d'une nouvelle adresse
       
       // On rafraîchit les données pour voir les changements
       await refreshContractData();
     } catch (error) {
       console.error("Erreur lors de l'enregistrement du votant :", error);
-      setError(error.message || "Oups, quelque chose a foiré pendant l'enregistrement du votant");
+      setError(error.message || "Erreur lors de l'enregistrement du votant");
     } finally {
       setIsLoading(false); // Dans tous les cas, on indique que l'opération est terminée
     }
@@ -58,7 +61,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On appelle la fonction du contrat pour passer à l'étape suivante
       await contract.methods.startProposalsRegistration().send({ from: accounts[0] });
-      setSuccess("C'est parti! Les votants peuvent maintenant soumettre leurs propositions");
+      setSuccess("La phase d'enregistrement des propositions a débuté");
       
       // On met à jour l'interface pour refléter le nouveau statut
       await refreshContractData();
@@ -82,7 +85,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On appelle la fonction du contrat pour terminer cette phase
       await contract.methods.endProposalsRegistration().send({ from: accounts[0] });
-      setSuccess("Fini les propositions! On se prépare pour le vote");
+      setSuccess("La phase d'enregistrement des propositions est terminée");
       
       await refreshContractData();
     } catch (error) {
@@ -105,7 +108,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On appelle la fonction du contrat pour démarrer le vote
       await contract.methods.startVotingSession().send({ from: accounts[0] });
-      setSuccess("Que le vote commence! Les votants peuvent maintenant choisir leur proposition préférée");
+      setSuccess("La session de vote est maintenant ouverte");
       
       await refreshContractData();
     } catch (error) {
@@ -128,7 +131,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On appelle la fonction du contrat pour terminer le vote
       await contract.methods.endVotingSession().send({ from: accounts[0] });
-      setSuccess("Les votes sont terminés! Plus personne ne peut voter maintenant");
+      setSuccess("La session de vote est maintenant terminée");
       
       await refreshContractData();
     } catch (error) {
@@ -151,7 +154,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
     try {
       // On appelle la fonction du contrat pour comptabiliser les votes
       await contract.methods.tallyVotes().send({ from: accounts[0] });
-      setSuccess("Votes comptabilisés! Vous pouvez maintenant voir le résultat");
+      setSuccess("Les votes ont été comptabilisés avec succès");
       
       await refreshContractData();
     } catch (error) {
@@ -163,101 +166,128 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
   };
 
   return (
-    <div className="admin-panel card">
-      <h2>Panneau d'administration</h2>
+    <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <AdminPanelSettingsIcon sx={{ fontSize: 32, mr: 2, color: '#3f51b5' }} />
+        <Typography variant="h5" component="h2" sx={{ color: '#3f51b5', fontWeight: 600 }}>
+          Panneau d'administration
+        </Typography>
+      </Box>
       
-      {/* Affichage des messages d'erreur ou de succès */}
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
       
-      {/* Formulaire d'ajout de votant (uniquement en phase 0) */}
       {workflowStatus === 0 && (
-        <div className="section">
-          <h3>Enregistrer un votant</h3>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: '#666' }}>
+            Enregistrer un votant
+          </Typography>
           <form onSubmit={registerVoter}>
-            <div className="form-group">
-              <label htmlFor="voterAddress">Adresse Ethereum :</label>
-              <input
-                type="text"
-                id="voterAddress"
-                value={voterAddress}
-                onChange={(e) => setVoterAddress(e.target.value)}
-                className="form-control"
-                placeholder="0x..."
-                required
-              />
-            </div>
-            <button
+            <TextField
+              fullWidth
+              label="Adresse Ethereum"
+              value={voterAddress}
+              onChange={(e) => setVoterAddress(e.target.value)}
+              placeholder="0x..."
+              required
+              sx={{ mb: 2 }}
+            />
+            <Button
               type="submit"
-              className="btn btn-primary"
+              variant="contained"
               disabled={isLoading}
+              startIcon={<HowToVoteIcon />}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
             >
               {isLoading ? "Traitement en cours..." : "Enregistrer le votant"}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Box>
       )}
       
-      {/* Boutons pour changer de phase - chaque bouton n'apparaît que quand c'est pertinent */}
-      <div className="workflow-controls">
-        <h3>Gestion du workflow</h3>
+      <Divider sx={{ my: 3 }} />
+      
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h6" sx={{ mb: 3, color: '#666' }}>
+          Gestion du workflow
+        </Typography>
         
-        {/* Bouton pour démarrer l'enregistrement des propositions */}
-        {workflowStatus === 0 && (
-          <button
-            onClick={startProposalsRegistration}
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "Traitement en cours..." : "Démarrer l'enregistrement des propositions"}
-          </button>
-        )}
-        
-        {/* Bouton pour terminer l'enregistrement des propositions */}
-        {workflowStatus === 1 && (
-          <button
-            onClick={endProposalsRegistration}
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "Traitement en cours..." : "Terminer l'enregistrement des propositions"}
-          </button>
-        )}
-        
-        {/* Bouton pour démarrer la session de vote */}
-        {workflowStatus === 2 && (
-          <button
-            onClick={startVotingSession}
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "Traitement en cours..." : "Démarrer la session de vote"}
-          </button>
-        )}
-        
-        {/* Bouton pour terminer la session de vote */}
-        {workflowStatus === 3 && (
-          <button
-            onClick={endVotingSession}
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "Traitement en cours..." : "Terminer la session de vote"}
-          </button>
-        )}
-        
-        {/* Bouton pour comptabiliser les votes */}
-        {workflowStatus === 4 && (
-          <button
-            onClick={tallyVotes}
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "Traitement en cours..." : "Comptabiliser les votes"}
-          </button>
-        )}
-      </div>
-    </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {workflowStatus === 0 && (
+            <Button
+              onClick={startProposalsRegistration}
+              variant="contained"
+              disabled={isLoading}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
+            >
+              {isLoading ? "Traitement en cours..." : "Démarrer l'enregistrement des propositions"}
+            </Button>
+          )}
+          
+          {workflowStatus === 1 && (
+            <Button
+              onClick={endProposalsRegistration}
+              variant="contained"
+              disabled={isLoading}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
+            >
+              {isLoading ? "Traitement en cours..." : "Terminer l'enregistrement des propositions"}
+            </Button>
+          )}
+          
+          {workflowStatus === 2 && (
+            <Button
+              onClick={startVotingSession}
+              variant="contained"
+              disabled={isLoading}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
+            >
+              {isLoading ? "Traitement en cours..." : "Démarrer la session de vote"}
+            </Button>
+          )}
+          
+          {workflowStatus === 3 && (
+            <Button
+              onClick={endVotingSession}
+              variant="contained"
+              disabled={isLoading}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
+            >
+              {isLoading ? "Traitement en cours..." : "Terminer la session de vote"}
+            </Button>
+          )}
+          
+          {workflowStatus === 4 && (
+            <Button
+              onClick={tallyVotes}
+              variant="contained"
+              disabled={isLoading}
+              sx={{
+                bgcolor: '#3f51b5',
+                '&:hover': { bgcolor: '#303f9f' }
+              }}
+            >
+              {isLoading ? "Traitement en cours..." : "Comptabiliser les votes"}
+            </Button>
+          )}
+        </Box>
+      </Box>
+    </Paper>
   );
 }
 

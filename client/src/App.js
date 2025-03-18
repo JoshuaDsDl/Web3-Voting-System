@@ -7,6 +7,8 @@ import AdminPanel from './components/AdminPanel';
 import VoterPanel from './components/VoterPanel';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import { Box, Typography, Button, Chip, Avatar, Alert } from '@mui/material';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 /**
  * Composant principal de notre super app de vote décentralisé
@@ -104,11 +106,11 @@ function App() {
           }
         } else {
           // Si MetaMask n'est pas installé, on affiche un message
-          setError("Hé, installe MetaMask pour utiliser cette app!");
+          setError("Veuillez installer MetaMask pour utiliser cette application.");
         }
       } catch (error) {
         console.error("Erreur lors de l'initialisation de l'application :", error);
-        setError("Oups! Quelque chose a foiré pendant l'initialisation.");
+        setError("Une erreur est survenue lors de l'initialisation.");
       }
     };
     
@@ -194,7 +196,7 @@ function App() {
       }
     } catch (error) {
       console.error("Erreur lors de la connexion des comptes :", error);
-      setError("Impossible de se connecter à tes comptes. T'as confirmé dans MetaMask?");
+      setError("Impossible de se connecter aux comptes. Veuillez vérifier MetaMask.");
     }
   };
 
@@ -215,7 +217,7 @@ function App() {
       }
     } catch (error) {
       console.error("Erreur lors du rafraîchissement des données :", error);
-      setError("Impossible de rafraîchir les données. La blockchain fait des siennes?");
+      setError("Impossible de rafraîchir les données.");
     }
   };
 
@@ -223,77 +225,91 @@ function App() {
   
   return (
     <div className="App">
-      {/* L'en-tête avec les infos de compte */}
       <Header 
         accounts={accounts} 
-        connectAccounts={connectAccounts}
-        isOwner={isOwner}
-        isVoter={isVoter}
+        isOwner={isOwner} 
+        isVoter={isVoter} 
       />
       
       <div className="container">
-        {/* Affichage des erreurs s'il y en a */}
-        {error && (
-          <div className="alert alert-danger">
-            {error}
-          </div>
-        )}
+        <Box sx={{ my: 4, textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ mb: 2, color: '#3f51b5', fontWeight: 600 }}>
+            Bienvenue sur VoteChain
+          </Typography>
+          
+          {accounts.length === 0 ? (
+            <Button
+              variant="contained"
+              onClick={connectAccounts}
+              startIcon={<AccountBalanceWalletIcon />}
+              sx={{
+                bgcolor: '#ff9800',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: '#f57c00'
+                },
+                py: 1.5,
+                px: 3,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                transition: 'all 0.3s ease',
+                '&:active': {
+                  transform: 'translateY(1px)'
+                }
+              }}
+            >
+              Connecter MetaMask
+            </Button>
+          ) : (
+            <Chip
+              avatar={<Avatar sx={{ background: 'rgba(255,255,255,0.2)' }}><AccountBalanceWalletIcon fontSize="small" /></Avatar>}
+              label={`${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`}
+              variant="outlined"
+              sx={{
+                color: '#3f51b5',
+                borderColor: 'rgba(63,81,181,0.3)',
+                mb: 2,
+                py: 2.5,
+                px: 1,
+                '& .MuiChip-avatar': {
+                  color: '#3f51b5',
+                  bgcolor: 'rgba(63,81,181,0.1)'
+                },
+                '& .MuiChip-label': {
+                  fontSize: '1rem'
+                }
+              }}
+            />
+          )}
+
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+        </Box>
         
-        {/* Indicateur de chargement */}
-        {!web3 && !error && (
-          <div className="alert alert-info">
-            Chargement de l'application...
-          </div>
-        )}
-        
-        {/* Contenu principal quand tout est chargé */}
-        {web3 && (
-          <>
-            {/* Affichage de l'étape actuelle du vote */}
-            <div className="workflow-status card">
-              <h2>Statut actuel</h2>
-              <div className="status-indicator">
-                {workflowStatus === 0 && "Enregistrement des votants"}
-                {workflowStatus === 1 && "Enregistrement des propositions en cours"}
-                {workflowStatus === 2 && "Enregistrement des propositions terminé"}
-                {workflowStatus === 3 && "Session de vote en cours"}
-                {workflowStatus === 4 && "Session de vote terminée"}
-                {workflowStatus === 5 && "Votes comptabilisés"}
-              </div>
+        {/* Affichage du statut du workflow */}
+        {accounts.length > 0 && (
+          <div className="workflow-status">
+            <div className="status-indicator">
+              {workflowStatus === 0 && "Enregistrement des votants"}
+              {workflowStatus === 1 && "Enregistrement des propositions ouvert"}
+              {workflowStatus === 2 && "Enregistrement des propositions fermé"}
+              {workflowStatus === 3 && "Session de vote ouverte"}
+              {workflowStatus === 4 && "Session de vote fermée"}
+              {workflowStatus === 5 && "Votes comptabilisés"}
             </div>
-            
-            {/* Si c'est l'admin, on affiche le panneau admin */}
-            {isOwner && (
-              <AdminPanel
-                web3={web3}
-                accounts={accounts}
-                contract={contract}
-                workflowStatus={workflowStatus}
-                refreshContractData={refreshContractData}
-              />
-            )}
-            
-            {/* Si c'est un votant, on affiche le panneau votant */}
-            {isVoter && (
-              <VoterPanel
-                web3={web3}
-                accounts={accounts}
-                contract={contract}
-                workflowStatus={workflowStatus}
-                refreshContractData={refreshContractData}
-              />
-            )}
-            
-            {/* Si c'est ni l'un ni l'autre, message d'accès refusé */}
-            {!isOwner && !isVoter && (
-              <div className="card">
-                <h2>Accès non autorisé</h2>
-                <p>
-                  T'es ni le boss ni un votant inscrit.
-                  Va voir l'admin pour qu'il t'ajoute à la liste!
-                </p>
-              </div>
-            )}
+          </div>
+        )}
+        
+        {/* Le reste du contenu */}
+        {accounts.length > 0 && (
+          <>
+            {isOwner && <AdminPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
+            {isVoter && <VoterPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
           </>
         )}
       </div>

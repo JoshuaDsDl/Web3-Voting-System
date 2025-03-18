@@ -2,17 +2,14 @@ require("@nomicfoundation/hardhat-toolbox");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
+  solidity: "0.8.20",
   networks: {
-    hardhat: {
-      chainId: 1337
-    },
     localhost: {
-      url: "http://172.20.10.5:8545",
-      chainId: 1337
+      url: "http://127.0.0.1:8545",
+      timeout: 60000, // 60 secondes
     }
   },
   paths: {
     artifacts: "./client/src/artifacts",
-  }
+  },
 };
