@@ -1,5 +1,0 @@
-[33m13b6e4e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m style: amélioration du centrage et de la disposition des éléments
-[33mb6d2e81[m refactor: amélioration de l'interface utilisateur et optimisation du code
-[33m2a223d0[m Fix: Suppression des caractères accentués dans les messages d'erreur Solidity
-[33md04a150[m Ajout de commentaires détaillés et nettoyage du code
-[33m007d879[m Initial commit: Création du projet DApp de Vote
