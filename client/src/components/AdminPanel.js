@@ -166,37 +166,39 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <AdminPanelSettingsIcon sx={{ fontSize: 32, mr: 2, color: '#3f51b5' }} />
-        <Typography variant="h5" component="h2" sx={{ color: '#3f51b5', fontWeight: 600 }}>
+    <Paper elevation={3} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <AdminPanelSettingsIcon sx={{ fontSize: 24, mr: 1, color: '#3f51b5' }} />
+        <Typography variant="h6" component="h2" sx={{ color: '#3f51b5', fontWeight: 600 }}>
           Panneau d'administration
         </Typography>
       </Box>
       
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       
       {workflowStatus === 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#666' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>
             Enregistrer un votant
           </Typography>
           <form onSubmit={registerVoter}>
             <TextField
               fullWidth
+              size="small"
               label="Adresse Ethereum"
               value={voterAddress}
               onChange={(e) => setVoterAddress(e.target.value)}
               placeholder="0x..."
               required
-              sx={{ mb: 2 }}
+              sx={{ mb: 1 }}
             />
             <Button
               type="submit"
               variant="contained"
               disabled={isLoading}
               startIcon={<HowToVoteIcon />}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }
@@ -208,19 +210,20 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
         </Box>
       )}
       
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: 2 }} />
       
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="h6" sx={{ mb: 3, color: '#666' }}>
+      <Box>
+        <Typography variant="subtitle1" sx={{ mb: 1, color: '#666' }}>
           Gestion du workflow
         </Typography>
         
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {workflowStatus === 0 && (
             <Button
               onClick={startProposalsRegistration}
               variant="contained"
               disabled={isLoading}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }
@@ -235,6 +238,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={endProposalsRegistration}
               variant="contained"
               disabled={isLoading}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }
@@ -249,6 +253,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={startVotingSession}
               variant="contained"
               disabled={isLoading}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }
@@ -263,6 +268,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={endVotingSession}
               variant="contained"
               disabled={isLoading}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }
@@ -277,6 +283,7 @@ function AdminPanel({ web3, accounts, contract, workflowStatus, refreshContractD
               onClick={tallyVotes}
               variant="contained"
               disabled={isLoading}
+              size="small"
               sx={{
                 bgcolor: '#3f51b5',
                 '&:hover': { bgcolor: '#303f9f' }

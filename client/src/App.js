@@ -5,7 +5,6 @@ import './App.css';
 import VotingContract from './contracts/Voting.json';
 import AdminPanel from './components/AdminPanel';
 import VoterPanel from './components/VoterPanel';
-import Header from './components/Header';
 import Footer from './components/Footer';
 import { Box, Typography, Button, Chip, Avatar, Alert } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -225,31 +224,86 @@ function App() {
   
   return (
     <div className="App">
-      <Header 
-        accounts={accounts} 
-        isOwner={isOwner} 
-        isVoter={isVoter} 
-      />
-      
       <div className="container">
-        <Box sx={{ my: 4, textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ mb: 2, color: '#3f51b5', fontWeight: 600 }}>
+        <div className="header-section">
+          <Typography variant="h4" className="title">
             Bienvenue sur VoteChain
           </Typography>
           
-          {accounts.length === 0 ? (
+          {accounts.length > 0 && !error && (
+            <Chip
+              avatar={<Avatar sx={{ background: 'rgba(255,255,255,0.2)' }}><AccountBalanceWalletIcon fontSize="small" /></Avatar>}
+              label={`${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`}
+              variant="outlined"
+              sx={{
+                color: '#3f51b5',
+                borderColor: 'rgba(63,81,181,0.3)',
+                py: 1,
+                px: 1,
+                '& .MuiChip-avatar': {
+                  color: '#3f51b5',
+                  bgcolor: 'rgba(63,81,181,0.1)'
+                },
+                '& .MuiChip-label': {
+                  fontSize: '0.9rem'
+                }
+              }}
+            />
+          )}
+        </div>
+        
+        <div className="content">
+          {error ? (
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              gap: 2,
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -60%)',
+              width: '100%',
+              maxWidth: '600px'
+            }}>
+              <Box sx={{
+                width: 80,
+                height: 80,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'error.light',
+                borderRadius: '50%'
+              }}>
+                <AccountBalanceWalletIcon sx={{ fontSize: 40, color: 'white' }} />
+              </Box>
+              <Alert 
+                severity="error"
+                sx={{
+                  width: '100%',
+                  '& .MuiAlert-message': {
+                    fontSize: '1.1rem',
+                    textAlign: 'center',
+                    width: '100%'
+                  }
+                }}
+              >
+                {error}
+              </Alert>
+            </Box>
+          ) : accounts.length === 0 ? (
             <Button
               variant="contained"
               onClick={connectAccounts}
               startIcon={<AccountBalanceWalletIcon />}
               sx={{
-                bgcolor: '#ff9800',
+                bgcolor: '#3f51b5',
                 color: 'white',
                 '&:hover': {
-                  bgcolor: '#f57c00'
+                  bgcolor: '#303f9f'
                 },
                 py: 1.5,
-                px: 3,
+                px: 4,
                 borderRadius: 2,
                 textTransform: 'none',
                 fontSize: '1.1rem',
@@ -263,55 +317,27 @@ function App() {
               Connecter MetaMask
             </Button>
           ) : (
-            <Chip
-              avatar={<Avatar sx={{ background: 'rgba(255,255,255,0.2)' }}><AccountBalanceWalletIcon fontSize="small" /></Avatar>}
-              label={`${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`}
-              variant="outlined"
-              sx={{
-                color: '#3f51b5',
-                borderColor: 'rgba(63,81,181,0.3)',
-                mb: 2,
-                py: 2.5,
-                px: 1,
-                '& .MuiChip-avatar': {
-                  color: '#3f51b5',
-                  bgcolor: 'rgba(63,81,181,0.1)'
-                },
-                '& .MuiChip-label': {
-                  fontSize: '1rem'
-                }
-              }}
-            />
+            <>
+              {(isOwner || isVoter) && (
+                <Box sx={{ width: '100%' }}>
+                  <div className="workflow-status">
+                    <div className="status-indicator">
+                      {workflowStatus === 0 && "Enregistrement des votants"}
+                      {workflowStatus === 1 && "Enregistrement des propositions ouvert"}
+                      {workflowStatus === 2 && "Enregistrement des propositions fermé"}
+                      {workflowStatus === 3 && "Session de vote ouverte"}
+                      {workflowStatus === 4 && "Session de vote fermée"}
+                      {workflowStatus === 5 && "Votes comptabilisés"}
+                    </div>
+                  </div>
+                  
+                  {isOwner && <AdminPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
+                  {isVoter && <VoterPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
+                </Box>
+              )}
+            </>
           )}
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </Box>
-        
-        {/* Affichage du statut du workflow */}
-        {accounts.length > 0 && (
-          <div className="workflow-status">
-            <div className="status-indicator">
-              {workflowStatus === 0 && "Enregistrement des votants"}
-              {workflowStatus === 1 && "Enregistrement des propositions ouvert"}
-              {workflowStatus === 2 && "Enregistrement des propositions fermé"}
-              {workflowStatus === 3 && "Session de vote ouverte"}
-              {workflowStatus === 4 && "Session de vote fermée"}
-              {workflowStatus === 5 && "Votes comptabilisés"}
-            </div>
-          </div>
-        )}
-        
-        {/* Le reste du contenu */}
-        {accounts.length > 0 && (
-          <>
-            {isOwner && <AdminPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
-            {isVoter && <VoterPanel web3={web3} accounts={accounts} contract={contract} workflowStatus={workflowStatus} refreshContractData={refreshContractData} />}
-          </>
-        )}
+        </div>
       </div>
       
       <Footer />
