@@ -292,42 +292,75 @@ function App() {
               </Alert>
             </Box>
           ) : accounts.length === 0 ? (
-            <Button
-              variant="contained"
-              onClick={connectAccounts}
-              startIcon={<AccountBalanceWalletIcon />}
-              sx={{
-                bgcolor: '#3f51b5',
-                color: 'white',
-                '&:hover': {
-                  bgcolor: '#303f9f'
-                },
-                py: 1.5,
-                px: 4,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontSize: '1.1rem',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                transition: 'all 0.3s ease',
-                '&:active': {
-                  transform: 'translateY(1px)'
-                }
-              }}
-            >
-              Connecter MetaMask
-            </Button>
+            <div className="metamask-connect">
+              <Button
+                variant="contained"
+                onClick={connectAccounts}
+                startIcon={<AccountBalanceWalletIcon />}
+                sx={{
+                  bgcolor: '#3f51b5',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: '#303f9f'
+                  },
+                  py: 1.5,
+                  px: 4,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  transition: 'all 0.3s ease',
+                  '&:active': {
+                    transform: 'translateY(1px)'
+                  }
+                }}
+              >
+                Connecter MetaMask
+              </Button>
+            </div>
           ) : (
             <>
               {(isOwner || isVoter) && (
                 <Box sx={{ width: '100%' }}>
-                  <div className="workflow-status">
-                    <div className="status-indicator">
-                      {workflowStatus === 0 && "Enregistrement des votants"}
-                      {workflowStatus === 1 && "Enregistrement des propositions ouvert"}
-                      {workflowStatus === 2 && "Enregistrement des propositions fermé"}
-                      {workflowStatus === 3 && "Session de vote ouverte"}
-                      {workflowStatus === 4 && "Session de vote fermée"}
-                      {workflowStatus === 5 && "Votes comptabilisés"}
+                  <div className="workflow-timeline">
+                    <div className="timeline-container">
+                      <div className="timeline-line"></div>
+                      <div 
+                        className="timeline-progress" 
+                        style={{ 
+                          width: `${(workflowStatus / 5) * 100}%`
+                        }}
+                      ></div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 0 ? 'active' : ''} ${workflowStatus > 0 ? 'completed' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Enregistrement<br/>votants</div>
+                      </div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 1 ? 'active' : ''} ${workflowStatus > 1 ? 'completed' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Propositions<br/>ouvertes</div>
+                      </div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 2 ? 'active' : ''} ${workflowStatus > 2 ? 'completed' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Propositions<br/>fermées</div>
+                      </div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 3 ? 'active' : ''} ${workflowStatus > 3 ? 'completed' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Vote<br/>en cours</div>
+                      </div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 4 ? 'active' : ''} ${workflowStatus > 4 ? 'completed' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Vote<br/>terminé</div>
+                      </div>
+                      
+                      <div className={`timeline-step ${workflowStatus >= 5 ? 'active' : ''}`}>
+                        <div className="step-dot"></div>
+                        <div className="step-label">Résultats</div>
+                      </div>
                     </div>
                   </div>
                   

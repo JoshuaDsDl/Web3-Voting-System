@@ -30,10 +30,118 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.metamask-connect {
+  flex: 1;
+  display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 600px;
+  width: 100%;
+}
+
+.workflow-timeline {
+  width: 100%;
+  margin-bottom: 2rem;
+  position: relative;
+  height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.timeline-container {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  width: 100%;
+  padding: 0 80px;
+  height: 100%;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 43px;
+  left: 80px;
+  right: 80px;
+  height: 3px;
+  background: #e0e0e0;
+  z-index: 1;
+  border-radius: 3px;
+}
+
+.timeline-progress {
+  position: absolute;
+  top: 43px;
+  left: 80px;
+  height: 3px;
+  background: #3f51b5;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  border-radius: 0 3px 3px 0;
+  max-width: calc(100% - 160px);
+}
+
+.timeline-step {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 35px;
+  height: 100%;
+  margin: 0 10px;
+}
+
+.step-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e0e0e0;
+  margin-bottom: 20px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: #757575;
+  text-align: center;
+  width: 90px;
+  line-height: 1.3;
+  transition: all 0.3s ease;
   margin: 0 auto;
+}
+
+/* Point complété sans animation */
+.timeline-step.completed .step-dot {
+  background: #3f51b5;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #3f51b5;
+}
+
+.timeline-step.completed .step-label {
+  color: #3f51b5;
+}
+
+/* Point actif avec animation */
+.timeline-step.active:not(.completed) .step-dot {
+  background: #3f51b5;
+  border: 2px solid #fff;
+  animation: glow 2s infinite;
+}
+
+.timeline-step.active:not(.completed) .step-label {
+  color: #3f51b5;
+  font-weight: 600;
+  transform: scale(1.05);
 }
 
 .workflow-status {
@@ -69,7 +177,10 @@
 }
 
 .admin-panel, .voter-panel {
-  margin-top: 30px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .panel-section {
@@ -205,4 +316,16 @@
   font-weight: 300;
   letter-spacing: 0.3px;
   color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0 2px #3f51b5;
+  }
+  50% {
+    box-shadow: 0 0 10px 2px #3f51b5, 0 0 20px 4px rgba(63, 81, 181, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 2px #3f51b5;
+  }
 } 
