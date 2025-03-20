@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
-import { Box, Typography, Button, Chip, Avatar, Alert, CircularProgress, Container, Paper } from '@mui/material';
+import { Box, Typography, Button, Chip, Avatar, Alert, CircularProgress, Container, Paper, IconButton, Tooltip } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DeveloperModeIcon from '@mui/icons-material/DeveloperMode';
+import CodeIcon from '@mui/icons-material/Code';
 import './App.css';
 
 import useWeb3Store from './store/web3Store';
@@ -30,9 +32,12 @@ function App() {
     isVoter, 
     workflowStatus, 
     error,
+    devMode,
     initWeb3, 
     connectAccounts,
-    clearError
+    clearError,
+    toggleDevMode,
+    contract
   } = useWeb3Store();
 
   // Initialisation de l'application
@@ -66,6 +71,22 @@ function App() {
             overflow: 'hidden'
           }}
         >
+          <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+            <Tooltip title={devMode ? "Désactiver le mode développeur" : "Activer le mode développeur"}>
+              <IconButton
+                onClick={toggleDevMode}
+                sx={{ 
+                  color: devMode ? colors.lighter : alpha(colors.lighter, 0.6),
+                  bgcolor: devMode ? alpha(colors.lighter, 0.1) : 'transparent',
+                  '&:hover': {
+                    bgcolor: alpha(colors.lighter, 0.2)
+                  }
+                }}
+              >
+                <DeveloperModeIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <Box 
             sx={{ 
               position: 'absolute', 
@@ -92,6 +113,23 @@ function App() {
             Bienvenue sur VoteChain
           </Typography>
           
+          {devMode && accounts.length > 0 && contract && (
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Chip
+                icon={<CodeIcon sx={{ color: alpha(colors.lighter, 0.8) }} />}
+                label={`Contrat: ${contract._address}`}
+                variant="outlined"
+                sx={{
+                  color: alpha(colors.lighter, 0.8),
+                  borderColor: alpha(colors.lighter, 0.3),
+                  '& .MuiChip-icon': {
+                    color: alpha(colors.lighter, 0.8)
+                  }
+                }}
+              />
+            </Box>
+          )}
+
           {accounts.length > 0 && !error && (
             <Chip
               avatar={<Avatar sx={{ background: 'rgba(255,255,255,0.2)' }}><AccountBalanceWalletIcon fontSize="small" /></Avatar>}
@@ -118,11 +156,12 @@ function App() {
           {error ? (
             <Paper elevation={3} sx={{ p: 4, borderRadius: 2, mb: 4 }}>
               <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center',
-                gap: 2,
-                py: 4
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center',
+                    gap: 2,
+                    py: 4,
+                    position: 'relative'
               }}>
                 <Box sx={{
                   width: 80,
@@ -163,6 +202,22 @@ function App() {
                   {error === "Veuillez installer MetaMask pour utiliser cette application." ? (
                     <>
                       {error}
+                      {devMode && (
+                        <Box sx={{ 
+                          position: 'absolute',
+                          top: -10,
+                          right: -10,
+                          bgcolor: colors.dark,
+                          color: colors.lighter,
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.8rem',
+                          zIndex: 1
+                        }}>
+                          Mode Dev
+                        </Box>
+                      )}
                       <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
                         Cette application nécessite l'extension MetaMask pour fonctionner.
                         <Box component="a" href="https://metamask.io/download/" target="_blank" rel="noopener" sx={{ display: 'block', mt: 1, color: colors.medium, textDecoration: 'none', fontWeight: 'bold', '&:hover': { textDecoration: 'underline', color: colors.dark } }}>
@@ -266,4 +321,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

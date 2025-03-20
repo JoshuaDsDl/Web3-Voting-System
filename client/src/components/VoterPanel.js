@@ -9,10 +9,13 @@ import {
   Card,
   CardContent,
   CardActions,
-  CircularProgress
+  CircularProgress,
+  Collapse,
+  IconButton
 } from '@mui/material';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import CodeIcon from '@mui/icons-material/Code';
 import useWeb3Store from '../store/web3Store';
 import useVotingStore from '../store/votingStore';
 import AlertMessage from './AlertMessage';
@@ -23,7 +26,7 @@ import ProposalSubmission from './ProposalSubmission';
  */
 function VoterPanel() {
   // États du store
-  const workflowStatus = useWeb3Store(state => state.workflowStatus);
+  const { workflowStatus, devMode, contract } = useWeb3Store();
   const { 
     proposals, 
     hasVoted, 
@@ -38,6 +41,9 @@ function VoterPanel() {
     voteForProposal,
     clearMessages
   } = useVotingStore();
+
+  // État local pour le debug
+  const [expandedProposals, setExpandedProposals] = useState({});
 
   // Chargement initial des données
   useEffect(() => {
@@ -56,6 +62,14 @@ function VoterPanel() {
   // Vote pour une proposition
   const handleVote = async (proposalId) => {
     await voteForProposal(proposalId);
+  };
+
+  // Toggle debug info
+  const toggleDebugInfo = (proposalId) => {
+    setExpandedProposals(prev => ({
+      ...prev,
+      [proposalId]: !prev[proposalId]
+    }));
   };
 
   // Informations spécifiques à chaque étape du workflow
@@ -123,15 +137,27 @@ function VoterPanel() {
           </Typography>
         </Box>
         
-        <Chip 
-          label={phaseInfo?.title} 
-          color="primary" 
-          sx={{ 
-            fontSize: '0.85rem', 
-            fontWeight: 'medium',
-            width: { xs: '100%', sm: 'auto' }
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {devMode && (
+            <Chip 
+              label={`Status: ${workflowStatus}`}
+              size="small"
+              sx={{ 
+                bgcolor: 'rgba(0,0,0,0.08)',
+                fontSize: '0.75rem'
+              }}
+            />
+          )}
+          <Chip 
+            label={phaseInfo?.title} 
+            color="primary" 
+            sx={{ 
+              fontSize: '0.85rem', 
+              fontWeight: 'medium',
+              width: { xs: '100%', sm: 'auto' }
+            }}
+          />
+        </Box>
       </Box>
       
       {/* Messages d'alerte */}
@@ -185,16 +211,27 @@ function VoterPanel() {
               >
                 <CardContent sx={{ flexGrow: 1, pb: workflowStatus === 3 && !hasVoted ? 0 : undefined }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Chip 
-                      label={`#${proposal.id}`} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(63,81,181,0.1)', 
-                        color: '#3f51b5',
-                        fontSize: '0.7rem',
-                        height: 20
-                      }} 
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip 
+                        label={`#${proposal.id}`} 
+                        size="small" 
+                        sx={{ 
+                          bgcolor: 'rgba(63,81,181,0.1)', 
+                          color: '#3f51b5',
+                          fontSize: '0.7rem',
+                          height: 20
+                        }} 
+                      />
+                      {devMode && (
+                        <IconButton 
+                          size="small" 
+                          onClick={() => toggleDebugInfo(proposal.id)}
+                          sx={{ p: 0.5 }}
+                        >
+                          <CodeIcon sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      )}
+                    </Box>
                     
                     {workflowStatus >= 3 && (
                       <Chip 
@@ -211,6 +248,21 @@ function VoterPanel() {
                       />
                     )}
                   </Box>
+                  
+                  {devMode && expandedProposals[proposal.id] && (
+                    <Box sx={{ 
+                      mb: 1, 
+                      p: 1, 
+                      bgcolor: 'rgba(0,0,0,0.03)', 
+                      borderRadius: 1,
+                      fontSize: '0.75rem',
+                      fontFamily: 'monospace'
+                    }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                        {JSON.stringify(proposal, null, 2)}
+                      </pre>
+                    </Box>
+                  )}
                   
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     {proposal.description}
@@ -269,4 +321,4 @@ function VoterPanel() {
   );
 }
 
-export default VoterPanel; 
+export default VoterPanel;
