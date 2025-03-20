@@ -13,7 +13,9 @@ import {
   alpha,
   Divider,
   Tooltip,
-  Fade
+  Fade,
+  IconButton,
+  Collapse
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -23,6 +25,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import CodeIcon from '@mui/icons-material/Code';
 import useWeb3Store from '../store/web3Store';
 import useVotingStore from '../store/votingStore';
 import useAdminStore from '../store/adminStore';
@@ -36,10 +39,10 @@ function AdminPanel() {
   // État local
   const [voterAddress, setVoterAddress] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   
   // États de connexion
-  const workflowStatus = useWeb3Store(state => state.workflowStatus);
-  const isVoter = useWeb3Store(state => state.isVoter);
+  const { workflowStatus, isVoter, devMode, contract } = useWeb3Store();
   
   // États des votants
   const { 
@@ -116,31 +119,36 @@ function AdminPanel() {
       status: 0,
       action: startProposalsRegistration,
       label: "Démarrer l'enregistrement des propositions",
-      color: colors.medium
+      color: colors.medium,
+      method: "startProposalsRegistering"
     },
     {
       status: 1,
       action: endProposalsRegistration,
       label: "Terminer l'enregistrement des propositions",
-      color: colors.medium
+      color: colors.medium,
+      method: "endProposalsRegistering"
     },
     {
       status: 2,
       action: startVotingSession,
       label: "Démarrer la session de vote",
-      color: colors.medium
+      color: colors.medium,
+      method: "startVotingSession"
     },
     {
       status: 3,
       action: endVotingSession,
       label: "Terminer la session de vote",
-      color: colors.medium
+      color: colors.medium,
+      method: "endVotingSession"
     },
     {
       status: 4,
       action: tallyVotes,
       label: "Comptabiliser les votes",
-      color: colors.medium
+      color: colors.medium,
+      method: "tallyVotes"
     }
   ];
 
@@ -230,34 +238,64 @@ function AdminPanel() {
             </Box>
           </Box>
           
+          {/* Dev Mode Indicator */}
+          {devMode && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                icon={<CodeIcon />}
+                label={`Contract Status: ${workflowStatus}`}
+                size="small"
+                sx={{ 
+                  bgcolor: alpha(colors.dark, 0.1),
+                  color: colors.dark,
+                  '& .MuiChip-icon': {
+                    color: colors.dark
+                  }
+                }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => setShowDebugInfo(!showDebugInfo)}
+                sx={{ 
+                  color: colors.dark,
+                  bgcolor: showDebugInfo ? alpha(colors.dark, 0.1) : 'transparent'
+                }}
+              >
+                <CodeIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
+          
           {/* Action principale à droite du titre */}
           {currentAction && workflowStatus < 5 ? (
             <Box sx={{ width: { xs: '100%', sm: 'auto' }, position: 'relative' }}>
-              <Button
-                variant="contained"
-                onClick={currentAction.action}
-                disabled={adminLoading || (workflowStatus === 0 && registeredVoters.length < 2)}
-                endIcon={<ArrowForwardIcon />}
-                sx={{
-                  py: 1.2,
-                  px: 3,
-                  textTransform: 'none',
-                  bgcolor: colors.dark,
-                  '&:hover': {
-                    bgcolor: alpha(colors.dark, 0.9)
-                  },
-                  borderRadius: 2,
-                  boxShadow: `0 4px 14px ${alpha(colors.dark, 0.4)}`,
-                  color: colors.lighter,
-                  width: '100%'
-                }}
-              >
-                {adminLoading ? (
-                  <CircularProgress size={22} sx={{ color: colors.lighter }} />
-                ) : (
-                  currentAction.label
-                )}
-              </Button>
+              <Tooltip title={devMode ? `Method: ${currentAction.method}` : ''}>
+                <Button
+                  variant="contained"
+                  onClick={currentAction.action}
+                  disabled={adminLoading || (workflowStatus === 0 && registeredVoters.length < 2)}
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{
+                    py: 1.2,
+                    px: 3,
+                    textTransform: 'none',
+                    bgcolor: colors.dark,
+                    '&:hover': {
+                      bgcolor: alpha(colors.dark, 0.9)
+                    },
+                    borderRadius: 2,
+                    boxShadow: `0 4px 14px ${alpha(colors.dark, 0.4)}`,
+                    color: colors.lighter,
+                    width: '100%'
+                  }}
+                >
+                  {adminLoading ? (
+                    <CircularProgress size={22} sx={{ color: colors.lighter }} />
+                  ) : (
+                    currentAction.label
+                  )}
+                </Button>
+              </Tooltip>
               {workflowStatus === 0 && registeredVoters.length < 2 && (
                 <Typography 
                   variant="caption" 
@@ -291,6 +329,49 @@ function AdminPanel() {
             />
           )}
         </Box>
+
+        {/* Debug Information */}
+        {devMode && showDebugInfo && (
+          <Collapse in={showDebugInfo}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                mb: 3,
+                bgcolor: alpha(colors.dark, 0.05),
+                border: `1px solid ${alpha(colors.dark, 0.1)}`,
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="subtitle2" gutterBottom color={colors.dark}>
+                Debug Information
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  m: 0,
+                  p: 1,
+                  bgcolor: alpha(colors.dark, 0.03),
+                  borderRadius: 1,
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all'
+                }}
+              >
+                {JSON.stringify({
+                  contract: contract ? {
+                    address: contract._address,
+                    network: contract._network,
+                  } : null,
+                  workflowStatus,
+                  registeredVoters: registeredVoters.length,
+                  currentAction: currentAction?.method || null,
+                }, null, 2)}
+              </Box>
+            </Paper>
+          </Collapse>
+        )}
 
         {/* Section des votants */}
         <Box sx={{ width: '100%', maxWidth: workflowStatus === 0 ? 'none' : 600, mx: 'auto' }}>
@@ -463,7 +544,7 @@ function AdminPanel() {
                     }
                   }}>
                     <Tooltip 
-                      title="Recommencer un nouveau vote" 
+                      title={devMode ? "Method: resetVoting" : "Recommencer un nouveau vote"}
                       placement="top"
                       TransitionComponent={Fade}
                       TransitionProps={{ timeout: 600 }}
@@ -518,19 +599,24 @@ function AdminPanel() {
               
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
                 {registeredVoters.slice(0, 8).map((voter, index) => (
-                  <Chip 
+                  <Tooltip
                     key={index}
-                    size="small"
-                    avatar={<Avatar sx={{ bgcolor: alpha(colors.medium, 0.2), color: colors.dark }}><AccountCircleIcon fontSize="small" /></Avatar>}
-                    label={`${voter.substring(0, 6)}...`}
-                    sx={{ 
-                      fontSize: '0.75rem',
-                      borderRadius: 1.5,
-                      bgcolor: colors.lighter,
-                      color: colors.dark,
-                      border: `1px solid ${colors.light}`
-                    }}
-                  />
+                    title={devMode ? voter : ""}
+                    placement="top"
+                  >
+                    <Chip 
+                      size="small"
+                      avatar={<Avatar sx={{ bgcolor: alpha(colors.medium, 0.2), color: colors.dark }}><AccountCircleIcon fontSize="small" /></Avatar>}
+                      label={`${voter.substring(0, 6)}...`}
+                      sx={{ 
+                        fontSize: '0.75rem',
+                        borderRadius: 1.5,
+                        bgcolor: colors.lighter,
+                        color: colors.dark,
+                        border: `1px solid ${colors.light}`
+                      }}
+                    />
+                  </Tooltip>
                 ))}
                 {registeredVoters.length > 8 && (
                   <Chip 
@@ -581,4 +667,4 @@ function AdminPanel() {
   );
 }
 
-export default AdminPanel; 
+export default AdminPanel;

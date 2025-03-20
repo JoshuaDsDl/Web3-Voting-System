@@ -8,6 +8,7 @@ const useWeb3Store = create((set, get) => ({
   web3: null,
   accounts: [],
   contract: null,
+  devMode: localStorage.getItem('devMode') === 'true' || false,
   
   // État utilisateur
   isOwner: false,
@@ -22,6 +23,34 @@ const useWeb3Store = create((set, get) => ({
   // Fonctions
   initWeb3: async () => {
     try {
+      const { devMode } = get();
+      
+      if (devMode) {
+        // Mock Web3 provider for development
+        const web3Instance = new Web3('http://localhost:8545');
+        const accounts = ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266']; // Default Hardhat account
+        
+        // Create contract instance with local deployment
+        const contractAddress = VotingContract.networks["1337"].address;
+        const instance = new web3Instance.eth.Contract(
+          VotingContract.abi,
+          contractAddress
+        );
+        
+        // Set up mock state
+        set({ 
+          web3: web3Instance, 
+          accounts, 
+          contract: instance,
+          isOwner: true,
+          isVoter: true,
+          workflowStatus: 0,
+          error: ''
+        });
+        
+        return;
+      }
+      
       const provider = await detectEthereumProvider();
       console.log("Provider détecté:", provider ? "Oui" : "Non");
       
@@ -142,11 +171,13 @@ const useWeb3Store = create((set, get) => ({
   },
 
   connectAccounts: async () => {
-    const { web3, contract } = get();
+    const { web3, contract, devMode } = get();
     
     try {
       if (web3) {
-        const accounts = await web3.eth.requestAccounts();
+        const accounts = devMode 
+          ? ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'] // Use default account in dev mode
+          : await web3.eth.requestAccounts();
         
         let isOwner = false;
         let isVoter = false;
@@ -178,12 +209,20 @@ const useWeb3Store = create((set, get) => ({
   },
 
   refreshContractData: async () => {
-    const { contract, accounts } = get();
+    const { contract, accounts, devMode } = get();
     
     try {
+      if (devMode) {
+        // Return mock data in dev mode
+        set({ 
+          workflowStatus: 0,
+          isVoter: true
+        });
+        return;
+      }
+
       if (contract && accounts.length > 0) {
         const status = await contract.methods.workflowStatus().call();
-        
         const voter = await contract.methods.voters(accounts[0]).call();
         
         set({ 
@@ -197,7 +236,13 @@ const useWeb3Store = create((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: '' })
+  clearError: () => set({ error: '' }),
+
+  toggleDevMode: () => {
+    const newDevMode = !get().devMode;
+    localStorage.setItem('devMode', newDevMode);
+    set({ devMode: newDevMode });
+  }
 }));
 
-export default useWeb3Store; 
+export default useWeb3Store;

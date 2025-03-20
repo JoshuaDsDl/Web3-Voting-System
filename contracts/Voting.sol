@@ -222,6 +222,10 @@ contract Voting {
         // Réinitialiser le gagnant
         winningProposalId = 0;
         
+        // Réinitialiser tous les votants et le compteur
+        voterCount = 0;
+        // Note: On ne peut pas utiliser delete sur un mapping entier,
+        // donc on émet un événement pour que le frontend sache qu'il faut rafraîchir
         emit WorkflowStatusChange(WorkflowStatus.VotesTallied, WorkflowStatus.RegisteringVoters);
     }
 
@@ -248,4 +252,4 @@ contract Voting {
             proposals[winningProposalId].proposer
         );
     }
-} 
+}
